@@ -9,6 +9,8 @@ import leadServicesRoutes from './routes/lead-services.routes.js';
 import leadEmployeesRoutes from './routes/lead-employees.routes.js';
 import employeeLeavesRoutes from './routes/employee-leaves.routes.js';
 import employeeScheduleRoutes from './routes/employee-schedule.routes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
+
 
 const app = express();
 
@@ -27,5 +29,6 @@ app.use('/lead-services', leadServicesRoutes);
 app.use('/lead-employees', leadEmployeesRoutes);
 app.use('/employee-leaves', employeeLeavesRoutes);
 app.use('/employee-schedule', employeeScheduleRoutes);
+app.use('/invoices', invoiceRoutes);
 
 export default app;
