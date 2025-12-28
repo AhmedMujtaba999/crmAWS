@@ -6,6 +6,7 @@ import taskRoutes from './routes/task.routes.js';
 import employeeRoutes from './routes/employee.routes.js';
 import serviceRoutes from './routes/services.routes.js';
 import leadServicesRoutes from './routes/lead-services.routes.js';
+import leadEmployeesRoutes from './routes/lead-employees.routes.js';
 
 const app = express();
 
@@ -21,6 +22,8 @@ app.use('/tasks', taskRoutes);
 app.use('/employees', employeeRoutes);
 app.use('/services', serviceRoutes);
 app.use('/lead-services', leadServicesRoutes);
+app.use('/lead-employees', leadEmployeesRoutes);
+
 
 
 
