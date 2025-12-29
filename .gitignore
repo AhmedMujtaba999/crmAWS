@@ -1,0 +1,12 @@
+# Backend environment variables
+backend/.env
+
+# Backend dependencies
+backend/node_modules/
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+
+# OS junk
+.DS_Store
