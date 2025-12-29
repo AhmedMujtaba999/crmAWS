@@ -11,24 +11,34 @@ import employeeLeavesRoutes from './routes/employee-leaves.routes.js';
 import employeeScheduleRoutes from './routes/employee-schedule.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 
+import authRoutes from './routes/auth.routes.js';
+import { requireAuth } from './middlewares/auth.middleware.js';
 
 const app = express();
 
 app.use(express.json());
 
+/**
+ * Public routes
+ */
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-app.use('/customers', customerRoutes);
-app.use('/leads', leadRoutes);
-app.use('/tasks', taskRoutes);
-app.use('/employees', employeeRoutes);
-app.use('/services', serviceRoutes);
-app.use('/lead-services', leadServicesRoutes);
-app.use('/lead-employees', leadEmployeesRoutes);
-app.use('/employee-leaves', employeeLeavesRoutes);
-app.use('/employee-schedule', employeeScheduleRoutes);
-app.use('/invoices', invoiceRoutes);
+app.use('/auth', authRoutes);
+
+/**
+ * Protected routes (login required)
+ */
+app.use('/customers', requireAuth, customerRoutes);
+app.use('/leads', requireAuth, leadRoutes);
+app.use('/tasks', requireAuth, taskRoutes);
+app.use('/employees', requireAuth, employeeRoutes);
+app.use('/services', requireAuth, serviceRoutes);
+app.use('/lead-services', requireAuth, leadServicesRoutes);
+app.use('/lead-employees', requireAuth, leadEmployeesRoutes);
+app.use('/employee-leaves', requireAuth, employeeLeavesRoutes);
+app.use('/employee-schedule', requireAuth, employeeScheduleRoutes);
+app.use('/invoices', requireAuth, invoiceRoutes);
 
 export default app;
