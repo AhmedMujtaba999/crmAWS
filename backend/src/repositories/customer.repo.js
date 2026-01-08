@@ -21,6 +21,9 @@ export async function createCustomer({ name, phone, email, address }) {
     return rows[0];
 }
 
+
+
+
 /**
  * READ all customers
  */
@@ -41,6 +44,9 @@ export async function getCustomerById(id) {
     );
     return rows[0];
 }
+
+
+
 
 /**
  * UPDATE customer
@@ -78,3 +84,38 @@ export async function deleteCustomer(id) {
         [id]
     );
 }
+
+
+
+
+/**
+ * CRUD operattions usinng client
+ */
+
+
+/**
+ * create
+ */
+export async function createClient(client, data) {
+    const { rows } = await client.query(
+        `INSERT INTO customers (name, phone, email, address)
+         VALUES ($1,$2,$3,$4)
+         RETURNING *`,
+        [data.name, data.phone, data.email, data.address]
+    );
+    return rows[0];
+}
+
+
+
+/**
+ * read
+ */
+export async function findByPhoneClient(client, phone) {
+    const { rows } = await client.query(
+        `SELECT * FROM customers WHERE phone = $1`,
+        [phone]
+    );
+    return rows[0];
+}
+

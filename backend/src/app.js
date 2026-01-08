@@ -11,6 +11,9 @@ import employeeLeavesRoutes from './routes/employee-leaves.routes.js';
 import employeeScheduleRoutes from './routes/employee-schedule.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 
+import workerTaskRoutes from './routes/workerTask.routes.js';
+
+
 import authRoutes from './routes/auth.routes.js';
 import { requireAuth } from './middlewares/auth.middleware.js';
 
@@ -40,5 +43,9 @@ app.use('/lead-employees', requireAuth, leadEmployeesRoutes);
 app.use('/employee-leaves', requireAuth, employeeLeavesRoutes);
 app.use('/employee-schedule', requireAuth, employeeScheduleRoutes);
 app.use('/invoices', requireAuth, invoiceRoutes);
+
+app.use('/workertaskui', requireAuth, workerTaskRoutes);
+app.use('/workertaskui', requireAuth, workerTaskRoutes);
+app.use('/workertaskui', requireAuth, workerTaskRoutes);
 
 export default app;

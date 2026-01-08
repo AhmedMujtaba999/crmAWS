@@ -92,3 +92,53 @@ export async function removeServiceFromLead(lead_id, service_id) {
     );
     return result.rows[0];
 }
+
+
+
+/**
+ * client
+ */
+
+/**
+ * Create lead service record (default type = PLANNED)
+ * Used when manager or worker mentions services
+ */
+export async function createClient(client, data) {
+    await client.query(
+        `
+    INSERT INTO lead_services
+      (lead_id, service_id, quantity, unit_price)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (lead_id, service_id)
+    DO UPDATE SET
+      quantity = EXCLUDED.quantity,
+      unit_price = EXCLUDED.unit_price
+    `,
+        [
+            data.lead_id,
+            data.service_id,
+            data.quantity ?? 1,
+            data.unit_price
+        ]
+    );
+}
+
+/**
+ * Promote services from PLANNED → ASSIGNED
+ * Called when worker task is created
+ */
+export async function markServicesAssigned(
+    client,
+    lead_id,
+    serviceIds
+) {
+    await client.query(
+        `
+    UPDATE lead_services
+    SET type = 'ASSIGNED'
+    WHERE lead_id = $1
+    AND service_id = ANY($2)
+    `,
+        [lead_id, serviceIds]
+    );
+}

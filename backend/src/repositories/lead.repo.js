@@ -60,3 +60,23 @@ export async function deleteLead(id) {
 
     return result.rows[0];
 }
+
+
+/**
+ * using client
+ */
+
+
+/**
+ * create
+ */
+
+export async function createClient(client, data) {
+    const { rows } = await client.query(
+        `INSERT INTO leads (customer_id, status, source)
+         VALUES ($1,$2,$3)
+         RETURNING *`,
+        [data.customer_id, data.status, data.source]
+    );
+    return rows[0];
+}

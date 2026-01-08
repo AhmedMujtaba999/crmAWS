@@ -10,3 +10,5 @@ yarn-error.log*
 
 # OS junk
 .DS_Store
+
+commands\s reference.pages

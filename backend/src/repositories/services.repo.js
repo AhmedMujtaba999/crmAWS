@@ -50,3 +50,20 @@ export async function deleteService(id) {
     );
     return result.rows[0];
 }
+
+
+/**
+ * client
+ */
+
+
+/**
+ * read
+ */
+export async function findByNameClient(client, name) {
+    const { rows } = await client.query(
+        `SELECT * FROM services WHERE name = $1 AND in_use = true`,
+        [name]
+    );
+    return rows[0];
+}

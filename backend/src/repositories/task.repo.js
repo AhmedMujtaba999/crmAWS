@@ -84,6 +84,21 @@ export async function updateTask(id, data) {
 
     return result.rows[0];
 }
+// Update task status only
+export async function updateTaskStatus(id, status) {
+    const { rows } = await pool.query(
+        `
+        UPDATE tasks
+        SET status = $1
+        WHERE id = $2
+        RETURNING *;
+        `,
+        [status, id]
+    );
+
+    return rows[0];
+}
+
 
 export async function deleteTask(id) {
     const result = await pool.query(
@@ -92,3 +107,32 @@ export async function deleteTask(id) {
     );
     return result.rows[0];
 }
+
+/**
+ * Client
+ */
+
+/**
+ * create
+ */
+
+export async function createClient(client, data) {
+    const { rows } = await client.query(
+        `
+        INSERT INTO tasks 
+        (lead_id, employee_id, title, description, due_date, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+        `,
+        [
+            data.lead_id,
+            data.employee_id,
+            data.title,
+            data.description,
+            data.due_date,
+            data.status
+        ]
+    );
+    return rows[0];
+}
+

@@ -37,3 +37,33 @@ export async function removeServiceFromLead(lead_id, service_id) {
     }
     return removed;
 }
+
+
+
+/**
+ * =========================
+ * CREATE (with transaction) client
+ * =========================
+ */
+export async function createClient(client, {
+    lead_id,
+    service_id,
+    quantity = 1,
+    unit_price = 0
+}) {
+    const { rows } = await client.query(
+        `
+        INSERT INTO lead_services (
+            lead_id,
+            service_id,
+            quantity,
+            unit_price
+        )
+        VALUES ($1, $2, $3, $4)
+        RETURNING *;
+        `,
+        [lead_id, service_id, quantity, unit_price]
+    );
+
+    return rows[0];
+}
