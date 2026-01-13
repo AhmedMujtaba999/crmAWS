@@ -4,6 +4,24 @@ export async function createInvoice(data) {
     return repo.createInvoice(data);
 }
 
+export async function createInvoiceForTask({
+    customer_id,
+    lead_id,
+    total_amount,
+    status
+}) {
+    const invoice_number = `INV-${Date.now()}`;
+
+    return repo.createInvoice({
+        customer_id,
+        lead_id,
+        invoice_number,
+        total_amount,
+        status,
+        pdf_url: null
+    });
+}
+
 export async function getAllInvoices() {
     return repo.getAllInvoices();
 }

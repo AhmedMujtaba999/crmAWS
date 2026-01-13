@@ -80,3 +80,11 @@ export async function createClient(client, data) {
     );
     return rows[0];
 }
+
+export async function getLeadByIdClient(client, id) {
+    const { rows } = await client.query(
+        `SELECT * FROM leads WHERE id = $1`,
+        [id]
+    );
+    return rows[0];
+}

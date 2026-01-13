@@ -12,7 +12,10 @@ import employeeScheduleRoutes from './routes/employee-schedule.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 
 import workerTaskRoutes from './routes/workerTask.routes.js';
+import workerTaskUploadRoutes from './routes/upload.routes.js';
+import uploadConfirmationRoutes from './routes/uploadConfirmation.routes.js';
 
+import uploadRoutes from './routes/upload.routes.js';
 
 import authRoutes from './routes/auth.routes.js';
 import { requireAuth } from './middlewares/auth.middleware.js';
@@ -45,7 +48,10 @@ app.use('/employee-schedule', requireAuth, employeeScheduleRoutes);
 app.use('/invoices', requireAuth, invoiceRoutes);
 
 app.use('/workertaskui', requireAuth, workerTaskRoutes);
-app.use('/workertaskui', requireAuth, workerTaskRoutes);
-app.use('/workertaskui', requireAuth, workerTaskRoutes);
+app.use('/workertaskinoivoicepicture', requireAuth, workerTaskUploadRoutes);
+
+
+app.use('/uploads', requireAuth, uploadRoutes);
+app.use('/upload-confirmation', requireAuth, uploadConfirmationRoutes);
 
 export default app;

@@ -99,6 +99,19 @@ export async function updateTaskStatus(id, status) {
     return rows[0];
 }
 
+export async function saveTaskImage({ task_id, image_type, image_url }) {
+    const result = await pool.query(
+        `
+    INSERT INTO task_images (task_id, image_type, image_url)
+    VALUES ($1, $2, $3)
+    RETURNING *
+    `,
+        [task_id, image_type, image_url]
+    );
+
+    return result.rows[0];
+}
+
 
 export async function deleteTask(id) {
     const result = await pool.query(
@@ -132,6 +145,17 @@ export async function createClient(client, data) {
             data.due_date,
             data.status
         ]
+    );
+    return rows[0];
+}
+
+/**
+ * READ task by ID (transaction-safe)
+ */
+export async function getTaskByIdClient(client, id) {
+    const { rows } = await client.query(
+        `SELECT * FROM tasks WHERE id = $1`,
+        [id]
     );
     return rows[0];
 }
