@@ -5,32 +5,52 @@ export async function createEmployee(data) {
         name,
         phone,
         email,
-        role,
-        employment_type,
-        hourly_rate,
-        is_active
+        role = null,
+        employment_type = null,
+        hourly_rate = null,
+        password_hash,
+        organization_id
     } = data;
 
-    const result = await pool.query(
+    const { rows } = await pool.query(
         `
-    INSERT INTO employees
-      (name, phone, email, role, employment_type, hourly_rate, is_active)
-    VALUES
-      ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *
-    `,
-        [
+        INSERT INTO employees (
             name,
             phone,
             email,
             role,
             employment_type,
             hourly_rate,
-            is_active ?? true
+            password_hash,
+            is_active,
+            organization_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8)
+        RETURNING
+            id,
+            name,
+            phone,
+            email,
+            role,
+            employment_type,
+            hourly_rate,
+            is_active,
+            organization_id,
+            created_at
+        `,
+        [
+            name,
+            phone,
+            email.toLowerCase(),
+            role,
+            employment_type,
+            hourly_rate,
+            password_hash,
+            organization_id
         ]
     );
 
-    return result.rows[0];
+    return rows[0];
 }
 
 export async function getAllEmployees() {
@@ -47,6 +67,29 @@ export async function getEmployeeById(id) {
     );
     return result.rows[0];
 }
+
+export async function findEmployeeForLogin(email, organization_id) {
+    const { rows } = await pool.query(
+        `
+        SELECT
+            id,
+            name,
+            email,
+            password_hash,
+            role,
+            is_active,
+            organization_id
+        FROM employees
+        WHERE email = $1
+          AND organization_id = $2
+        LIMIT 1
+        `,
+        [email.toLowerCase(), organization_id]
+    );
+
+    return rows[0];
+}
+
 
 export async function updateEmployee(id, data) {
     const {

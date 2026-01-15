@@ -1,19 +1,17 @@
-import * as service from '../services/auth.service.js';
+import * as service from '../services/employeeAuth.service.js';
 
-export async function register(req, res, next) {
+export async function registerEmployee(req, res, next) {
     try {
-        const { name, email, password } = req.body;
-        const data = await service.register({ name, email, password });
+        const data = await service.registerEmployee(req.body);
         res.status(201).json(data);
     } catch (err) {
         next(err);
     }
 }
 
-export async function login(req, res, next) {
+export async function loginEmployee(req, res, next) {
     try {
-        const { email, password } = req.body;
-        const data = await service.login({ email, password });
+        const data = await service.loginEmployee(req.body);
         res.json(data);
     } catch (err) {
         next(err);
