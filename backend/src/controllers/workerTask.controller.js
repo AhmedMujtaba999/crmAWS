@@ -47,14 +47,25 @@ export async function getWorkerTaskHistory(req, res, next) {
 export async function updateWorkerTask(req, res, next) {
     try {
         const { taskId } = req.params;
-        const { status } = req.body;
 
-        const task = await updateWorkerTaskStatus(taskId, status);
+        const {
+            status,
+            send_invoice,
+            send_pictures
+        } = req.body;
+
+        const result = await updateWorkerTaskStatus({
+            taskId,
+            status,
+            send_invoice,
+            send_pictures
+        });
 
         res.json({
             success: true,
-            task
+            task: result
         });
+
     } catch (err) {
         next(err);
     }

@@ -160,3 +160,29 @@ export async function getTaskByIdClient(client, id) {
     return rows[0];
 }
 
+export async function updateTaskStatusAndFlags(
+    client,
+    taskId,
+    { status, send_invoice, send_pictures }
+) {
+    const result = await client.query(
+        `
+    UPDATE tasks
+    SET
+      status = $2,
+      send_invoice = COALESCE($3, send_invoice),
+      send_pictures = COALESCE($4, send_pictures),
+      updated_at = NOW()
+    WHERE id = $1
+    RETURNING *
+    `,
+        [
+            taskId,
+            status,
+            send_invoice ?? null,
+            send_pictures ?? null
+        ]
+    );
+
+    return result.rows[0] || null;
+}

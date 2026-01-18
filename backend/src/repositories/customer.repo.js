@@ -119,3 +119,28 @@ export async function findByPhoneClient(client, phone) {
     return rows[0];
 }
 
+export async function getCustomerByIdClient(client, customerId) {
+    if (!client) {
+        throw new Error('DB client is required');
+    }
+
+    if (!customerId) {
+        throw new Error('customerId is required');
+    }
+
+    const result = await client.query(
+        `
+        SELECT
+            id,
+            name,
+            email,
+            phone,
+            created_at
+        FROM customers
+        WHERE id = $1
+        `,
+        [customerId]
+    );
+
+    return result.rows[0] || null;
+}

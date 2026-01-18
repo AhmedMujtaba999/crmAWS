@@ -5,9 +5,12 @@ import * as leadRepo from '../repositories/lead.repo.js';
 import * as taskRepo from '../repositories/task.repo.js';
 import * as leadServiceRepo from '../repositories/lead-services.repo.js';
 import * as workerTaskRepo from '../repositories/workerTask.repo.js';
+import * as invoiceRepo from '../repositories/invoice.repo.js';
+import * as taskImagesRepo from '../repositories/taskImages.repo.js';
+import { sendTaskCompletionEmail } from './emailInvoice.service.js';
 
 
-const ALLOWED_STATUSES = ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING'];
+const ALLOWED_STATUSES = ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING', 'DRAFT', 'DEFERRED'];
 /**
  * POST /workertaskui
  * Creates task from worker UI and assigns planned lead services
@@ -161,19 +164,105 @@ export async function getWorkerTaskHistory(empId) {
 }
 
 
-export async function updateWorkerTaskStatus(taskId, status) {
-    if (!taskId) throw new Error('taskId is required');
-    if (!status) throw new Error('status is required');
-
+export async function updateWorkerTaskStatus({
+    taskId,
+    status,
+    send_invoice,
+    send_pictures
+}) {
     if (!ALLOWED_STATUSES.includes(status)) {
         throw new Error(`Invalid status: ${status}`);
     }
 
-    const updatedTask = await taskRepo.updateTaskStatus(taskId, status);
+    const client = await pool.connect();
+    let emailPayload = null; // 🚫 never send email inside transaction
 
-    if (!updatedTask) {
-        throw new Error('Task not found');
+    try {
+        await client.query('BEGIN');
+
+        // 1️⃣ Update task status + flags
+        const task = await taskRepo.updateTaskStatusAndFlags(client, taskId, {
+            status,
+            send_invoice,
+            send_pictures
+        });
+
+        if (!task) throw new Error('Task not found');
+
+        // 2️⃣ Trigger validation ONLY on COMPLETED
+        if (status === 'COMPLETED') {
+            let invoice = null;
+            let images = [];
+
+            // 📄 Invoice validation
+            if (task.send_invoice === true) {
+                invoice = await invoiceRepo.getLatestInvoiceByTaskIdClient(
+                    client,
+                    task.id
+                );
+
+                // ❌ HARD FAIL if invoice missing
+                if (!invoice) {
+                    throw new Error('Invoice not found for completed task');
+                }
+
+                if (!invoice.pdf_url) {
+                    throw new Error('Invoice PDF missing');
+                }
+            }
+
+            // 🖼️ Image validation
+            if (task.send_pictures === true) {
+                images = await taskImagesRepo.getTaskImagesByTaskIdClient(
+                    client,
+                    task.id
+                );
+
+                // ❌ HARD FAIL if no images
+                if (!images || images.length === 0) {
+                    throw new Error('No task images found');
+                }
+            }
+
+            // 📧 Resolve customer email ONLY if something must be sent
+            if (task.send_invoice || task.send_pictures) {
+                const lead = await leadRepo.getLeadByIdClient(
+                    client,
+                    task.lead_id
+                );
+                if (!lead) throw new Error('Lead not found');
+
+                const customer = await customerRepo.getCustomerByIdClient(
+                    client,
+                    lead.customer_id
+                );
+                if (!customer?.email) {
+                    throw new Error('Customer email not found');
+                }
+
+                // Prepare email payload (send AFTER commit)
+                emailPayload = {
+                    to: customer.email,
+                    invoice,
+                    images
+                };
+            }
+        }
+
+        await client.query('COMMIT');
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+
+    } finally {
+        client.release();
     }
 
-    return updatedTask;
+    // 🚀 Send email OUTSIDE transaction
+    if (emailPayload) {
+        await sendTaskCompletionEmail(emailPayload);
+    }
+
+    return { success: true };
 }

@@ -26,3 +26,17 @@ export async function getTaskImagesByType(client, task_id, image_type) {
 
     return rows;
 }
+
+export async function getTaskImagesByTaskIdClient(client, task_id) {
+    const result = await client.query(
+        `
+    SELECT image_type, image_url
+    FROM task_images
+    WHERE task_id = $1
+    ORDER BY uploaded_at ASC
+    `,
+        [task_id]
+    );
+
+    return result.rows;
+}
