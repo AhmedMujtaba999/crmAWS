@@ -1,21 +1,26 @@
 import { pool } from '../config/db.js';
 
-export async function createService({ name, description }) {
+export async function createService({ name, description, organization_id }) {
     const result = await pool.query(
         `
-    INSERT INTO services (name, description)
-    VALUES ($1, $2)
-    RETURNING *
-    `,
-        [name, description]
+        INSERT INTO services (name, description, organization_id)
+        VALUES ($1, $2, $3)
+        RETURNING *
+        `,
+        [name, description, organization_id]
     );
-
     return result.rows[0];
 }
 
-export async function getAllServices() {
+export async function getAllServices({ organization_id }) {
     const result = await pool.query(
-        `SELECT * FROM services ORDER BY name`
+        `
+        SELECT *
+        FROM services
+        WHERE organization_id = $1
+        ORDER BY name
+        `,
+        [organization_id]
     );
     return result.rows;
 }
@@ -43,10 +48,15 @@ export async function updateService(id, { name, description }) {
     return result.rows[0];
 }
 
-export async function deleteService(id) {
+export async function deleteService({ id, organization_id }) {
     const result = await pool.query(
-        `DELETE FROM services WHERE id = $1 RETURNING *`,
-        [id]
+        `
+        DELETE FROM services
+        WHERE id = $1
+          AND organization_id = $2
+        RETURNING *
+        `,
+        [id, organization_id]
     );
     return result.rows[0];
 }

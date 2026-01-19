@@ -1,11 +1,21 @@
 import * as repo from '../repositories/services.repo.js';
 
-export async function createService(data) {
-    return repo.createService(data);
+
+export async function createService({ name, description, organization_id }) {
+    if (!organization_id) throw new Error('organization_id is required');
+    if (!name) throw new Error('name is required');
+
+    return repo.createService({
+        name,
+        description,
+        organization_id
+    });
 }
 
-export async function getAllServices() {
-    return repo.getAllServices();
+export async function getAllServices({ organization_id }) {
+    if (!organization_id) throw new Error('organization_id is required');
+
+    return repo.getAllServices({ organization_id });
 }
 
 export async function getServiceById(id) {
@@ -20,8 +30,12 @@ export async function updateService(id, data) {
     return updated;
 }
 
-export async function deleteService(id) {
-    const deleted = await repo.deleteService(id);
+export async function deleteService({ id, organization_id }) {
+    if (!id) throw new Error('service id is required');
+    if (!organization_id) throw new Error('organization_id is required');
+
+    const deleted = await repo.deleteService({ id, organization_id });
     if (!deleted) throw new Error('Service not found');
+
     return deleted;
 }
