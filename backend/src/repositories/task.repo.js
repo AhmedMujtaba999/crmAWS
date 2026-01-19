@@ -129,23 +129,38 @@ export async function deleteTask(id) {
  * create
  */
 
+
+
 export async function createClient(client, data) {
+    const {
+        lead_id,
+        employee_id,
+        title,
+        description,
+        due_date,
+        status,
+        organization_id
+    } = data;
+
     const { rows } = await client.query(
         `
-        INSERT INTO tasks 
-        (lead_id, employee_id, title, description, due_date, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO tasks
+            (lead_id, employee_id, title, description, due_date, status, organization_id)
+        VALUES
+            ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
         `,
         [
-            data.lead_id,
-            data.employee_id,
-            data.title,
-            data.description,
-            data.due_date,
-            data.status
+            lead_id,
+            employee_id,
+            title,
+            description,
+            due_date,
+            status,
+            organization_id
         ]
     );
+
     return rows[0];
 }
 
@@ -160,29 +175,20 @@ export async function getTaskByIdClient(client, id) {
     return rows[0];
 }
 
-export async function updateTaskStatusAndFlags(
-    client,
-    taskId,
-    { status, send_invoice, send_pictures }
-) {
-    const result = await client.query(
+export async function updateTaskStatusAndFlags(client, taskId, data) {
+    const { status, send_invoice, send_pictures } = data;
+
+    const { rows } = await client.query(
         `
-    UPDATE tasks
-    SET
-      status = $2,
-      send_invoice = COALESCE($3, send_invoice),
-      send_pictures = COALESCE($4, send_pictures),
-      updated_at = NOW()
-    WHERE id = $1
-    RETURNING *
-    `,
-        [
-            taskId,
-            status,
-            send_invoice ?? null,
-            send_pictures ?? null
-        ]
+        UPDATE tasks
+        SET status = $1,
+            send_invoice = $2,
+            send_pictures = $3
+        WHERE id = $4
+        RETURNING *
+        `,
+        [status, send_invoice, send_pictures, taskId]
     );
 
-    return result.rows[0] || null;
+    return rows[0];
 }

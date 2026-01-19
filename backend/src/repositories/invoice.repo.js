@@ -154,7 +154,7 @@ export async function createInvoiceForTaskClient(client, {
 }
 
 export async function getLatestInvoiceByTaskIdClient(client, task_id) {
-    const result = await client.query(
+    const { rows } = await client.query(
         `
         SELECT *
         FROM invoices
@@ -167,5 +167,5 @@ export async function getLatestInvoiceByTaskIdClient(client, task_id) {
         [task_id]
     );
 
-    return result.rows[0] || null;
+    return rows[0];
 }

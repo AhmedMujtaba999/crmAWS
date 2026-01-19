@@ -19,23 +19,26 @@ export async function addServiceToLead({
     return result.rows[0];
 }
 
-export async function getServicesByLead(lead_id) {
-    const result = await pool.query(
+export async function getServicesByLeadId(leadId, organization_id) {
+    const { rows } = await pool.query(
         `
-    SELECT
-      ls.lead_id,
-      ls.service_id,
-      s.name AS service_name,
-      ls.quantity,
-      ls.unit_price,
-      ls.total_price
-    FROM lead_services ls
-    JOIN services s ON s.id = ls.service_id
-    WHERE ls.lead_id = $1
-    `,
-        [lead_id]
+        SELECT
+            ls.service_id,
+            s.name AS service_name,
+            ls.quantity,
+            ls.unit_price,
+            ls.total_price,
+            ls.type
+        FROM lead_services ls
+        JOIN services s
+          ON (ls.organization_id, ls.service_id) = (s.organization_id, s.id)
+        WHERE ls.lead_id = $1
+          AND ls.organization_id = $2
+        `,
+        [leadId, organization_id]
     );
-    return result.rows;
+
+    return rows;
 }
 
 export async function getAllLeadServices() {
@@ -104,24 +107,25 @@ export async function removeServiceFromLead(lead_id, service_id) {
  * Used when manager or worker mentions services
  */
 export async function createClient(client, data) {
+    const {
+        lead_id,
+        service_id,
+        quantity,
+        unit_price,
+        organization_id
+    } = data;
+
     await client.query(
         `
-    INSERT INTO lead_services
-      (lead_id, service_id, quantity, unit_price)
-    VALUES ($1, $2, $3, $4)
-    ON CONFLICT (lead_id, service_id)
-    DO UPDATE SET
-      quantity = EXCLUDED.quantity,
-      unit_price = EXCLUDED.unit_price
-    `,
-        [
-            data.lead_id,
-            data.service_id,
-            data.quantity ?? 1,
-            data.unit_price
-        ]
+        INSERT INTO lead_services
+            (lead_id, service_id, quantity, unit_price)
+        VALUES
+            ($1, $2, $3, $4)
+        `,
+        [lead_id, service_id, quantity, unit_price]
     );
 }
+
 
 /**
  * Promote services from PLANNED → ASSIGNED
@@ -130,15 +134,17 @@ export async function createClient(client, data) {
 export async function markServicesAssigned(
     client,
     lead_id,
-    serviceIds
+    serviceIds,
+    status,
+    organization_id
 ) {
     await client.query(
         `
-    UPDATE lead_services
-    SET type = 'ASSIGNED'
-    WHERE lead_id = $1
-    AND service_id = ANY($2)
-    `,
-        [lead_id, serviceIds]
+        UPDATE lead_services
+        SET type = $1
+        WHERE lead_id = $2
+          AND service_id = ANY($3)
+        `,
+        [status, lead_id, serviceIds]
     );
 }

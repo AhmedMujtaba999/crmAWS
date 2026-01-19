@@ -72,19 +72,29 @@ export async function deleteLead(id) {
  */
 
 export async function createClient(client, data) {
+    const { customer_id, status, source, organization_id } = data;
+
     const { rows } = await client.query(
-        `INSERT INTO leads (customer_id, status, source)
-         VALUES ($1,$2,$3)
-         RETURNING *`,
-        [data.customer_id, data.status, data.source]
+        `
+        INSERT INTO leads (customer_id, status, source, organization_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+        `,
+        [customer_id, status, source, organization_id]
     );
+
     return rows[0];
 }
 
-export async function getLeadByIdClient(client, id) {
+export async function getLeadByIdClient(client, lead_id, organization_id) {
     const { rows } = await client.query(
-        `SELECT * FROM leads WHERE id = $1`,
-        [id]
+        `
+        SELECT *
+        FROM leads
+        WHERE id = $1
+          AND organization_id = $2
+        `,
+        [lead_id, organization_id]
     );
     return rows[0];
 }
