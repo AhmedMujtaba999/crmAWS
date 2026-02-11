@@ -4,113 +4,135 @@ import * as leadRepo from '../repositories/lead.repo.js';
 import * as invoiceRepo from '../repositories/invoice.repo.js';
 import * as taskImageRepo from '../repositories/taskImages.repo.js';
 import { createPresignedUpload } from './s3Upload.service.js';
+import { createPresignedDownload } from "./s3Download.service.js";
 
 export async function createWorkerTaskUploads({
     task_id,
     status = 'DRAFT',
-    action = {}
+    action = {},
+    organization_id
 }) {
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        // 1️⃣ Task
-        const task = await taskRepo.getTaskByIdClient(client, task_id);
+        // 1️⃣ Validate task
+        const task = await taskRepo.getTaskByIdClient(
+            client,
+            task_id,
+            organization_id
+        );
         if (!task) throw new Error('Task not found');
 
-        // 2️⃣ Lead + Invoice (ONLY if requested)
-        let lead = null;
         let invoice = null;
+        let key = null;
 
+        // 2️⃣ Invoice (placeholder row)
         if (action.invoice === true) {
-
-            // 🔒 CHECK EXISTING INVOICE STATUS
-            const existingInvoice =
-                await invoiceRepo.getLatestInvoiceByTaskIdClient(client, task_id);
-
-            if (
-                existingInvoice &&
-                !['DEFERRED', 'CANCELLED'].includes(existingInvoice.status)
-            ) {
-                throw new Error(
-                    `Invoice already exists with status '${existingInvoice.status}'. ` +
-                    `New invoice allowed only if status is DEFERRED or CANCELLED`
+            const existing =
+                await invoiceRepo.getLatestInvoiceByTaskIdClient(
+                    client,
+                    task_id,
+                    organization_id
                 );
+
+            if (existing) {
+
+                if (existing.upload_status == 'PENDING') {
+                    //logic later 
+                    console.log('invoice already exists with upload_status =', existing.upload_status)
+                    throw new Error(
+                        `Invoice already exists with status error 1 '${existing.status}'`
+                    )
+                }
+                else if (!['DEFERRED', 'CANCELLED'].includes(existing.status)) {
+                    throw new Error(
+                        `Invoice already exists with status error 2'${existing.status}'`
+                    )
+                }
+
+
             }
 
-            // ✅ Allowed → create new invoice
-            lead = await leadRepo.getLeadByIdClient(client, task.lead_id);
-            if (!lead) throw new Error('Lead not found');
+            const lead = await leadRepo.getLeadByIdClient(
+                client,
+                task.lead_id,
+                organization_id
+            );
 
             const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now()}`;
-
+            key = `tasks/${task_id}/invoices/${invoiceNumber}/invoice-v1.pdf`;
             invoice = await invoiceRepo.createInvoiceForTaskClient(client, {
                 customer_id: lead.customer_id,
                 lead_id: lead.id,
                 invoice_number: invoiceNumber,
                 total_amount: 0,
-                status
+                status,
+                organization_id,
+                pdf_url: key,
+                upload_status: "PENDING"
             });
         }
 
-        // 3️⃣ Response object (locked shape)
-        const uploadResponse = {
-            task_id
-        };
+        const response = { task_id };
 
-        // 📄 Invoice PDF
-        if (action.invoice === true) {
-            uploadResponse.invoice = {
+        // 📄 Invoice PDF upload
+        if (invoice) {
+            response.invoice = {
                 invoice_id: invoice.id,
                 invoice_number: invoice.invoice_number,
                 upload_urls: {
                     invoice_pdf: await createPresignedUpload({
-                        key: `invoices/${invoice.id}/invoice-v1.pdf`,
+                        key,
                         contentType: 'application/pdf'
                     })
                 }
             };
         }
 
-        // 🖼️ Before images (single or multiple)
-        if (action.beforePic) {
-            const count =
-                action.beforePic === true ? 1 : Number(action.beforePic);
-
-            uploadResponse.image_uploads ??= {};
-            uploadResponse.image_uploads.before = [];
+        // 🖼️ Helper for images
+        async function prepareImages(type, count) {
+            response.image_uploads ??= {};
+            response.image_uploads[type] = [];
 
             for (let i = 0; i < count; i++) {
-                const beforeImage = await createPresignedUpload({
-                    key: `tasks/${task_id}/before/${Date.now()}-${i}.jpg`,
+                const key = `tasks/${task_id}/${type}/${Date.now()}-${i}.jpg`;
+
+                // ✅ CREATE PLACEHOLDER ROW
+                await taskImageRepo.createTaskImagePlaceholder(client, {
+                    task_id,
+                    image_type: type,
+                    image_url: key,
+                    organization_id,
+                    upload_status: 'PENDING'
+                });
+
+                const upload = await createPresignedUpload({
+                    key,
                     contentType: 'image/jpeg'
                 });
 
-                uploadResponse.image_uploads.before.push(beforeImage);
+                response.image_uploads[type].push(upload);
             }
         }
 
-        // 🖼️ After images (single or multiple)
+        if (action.beforePic) {
+            await prepareImages(
+                'before',
+                Number(action.beforePic)
+            );
+        }
+
         if (action.afterPic) {
-            const count =
-                action.afterPic === true ? 1 : Number(action.afterPic);
-
-            uploadResponse.image_uploads ??= {};
-            uploadResponse.image_uploads.after = [];
-
-            for (let i = 0; i < count; i++) {
-                const afterImage = await createPresignedUpload({
-                    key: `tasks/${task_id}/after/${Date.now()}-${i}.jpg`,
-                    contentType: 'image/jpeg'
-                });
-
-                uploadResponse.image_uploads.after.push(afterImage);
-            }
+            await prepareImages(
+                'after',
+                Number(action.afterPic)
+            );
         }
 
         await client.query('COMMIT');
-        return uploadResponse;
+        return response;
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -124,37 +146,82 @@ export async function getWorkerTaskUploads({
     task_id,
     before,
     after,
-    invoice
+    invoice,
+    organization_id
 }) {
     const client = await pool.connect();
 
     try {
         const response = { task_id };
-
-        if (before === 'true') {
-            response.images ??= {};
-            response.images.before = await taskImageRepo.getTaskImagesByType(
+        console.log('1', response, before, after, invoice)
+        // 🖼 BEFORE IMAGES
+        if (before === "true") {
+            const images = await taskImageRepo.getTaskImagesByType(
                 client,
                 task_id,
-                'before'
+                "before",
+                organization_id
+            );
+
+            response.images ??= {};
+            response.images.before = await Promise.all(
+                images.map(async img => ({
+                    image_id: img.id,
+                    upload_status: img.upload_status,
+                    object_key: img.image_url,
+                    download: await createPresignedDownload({
+                        key: img.image_url
+                    })
+                }))
             );
         }
 
-        if (after === 'true') {
-            response.images ??= {};
-            response.images.after = await taskImageRepo.getTaskImagesByType(
+        console.log('2', response)
+
+        // 🖼 AFTER IMAGES
+        if (after === "true") {
+            const images = await taskImageRepo.getTaskImagesByType(
                 client,
                 task_id,
-                'after'
+                "after",
+                organization_id
             );
-        }
 
-        if (invoice === 'true') {
-            response.invoice = await invoiceRepo.getLatestInvoiceByTaskIdClient(
-                client,
-                task_id
+            response.images ??= {};
+            response.images.after = await Promise.all(
+                images.map(async img => ({
+                    image_id: img.id,
+                    upload_status: img.upload_status,
+                    object_key: img.image_url,
+                    download: await createPresignedDownload({
+                        key: img.image_url
+                    })
+                }))
             );
         }
+        console.log('3', response)
+        // 📄 INVOICE
+        if (invoice === "true") {
+            const inv = await invoiceRepo.getLatestInvoiceByTaskIdClient(
+                client,
+                task_id,
+                organization_id
+            );
+
+            console.log('invoice', inv)
+
+            if (inv?.pdf_url) {
+                response.invoice = {
+                    invoice_id: inv.id,
+                    upload_status: inv.upload_status,
+                    object_key: inv.pdf_url,
+                    download: await createPresignedDownload({
+                        key: inv.pdf_url
+                    })
+                };
+            }
+        }
+        console.log('3', response)
 
         return response;
 

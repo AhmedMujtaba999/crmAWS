@@ -3,6 +3,7 @@ import { getWorkerTaskUploads } from '../services/workerTaskUpload.service.js';
 
 export async function postWorkerTaskInvoicePicture(req, res, next) {
     try {
+        const organization_id = req.user.organization_id;
         const { task_id, status, action } = req.body;
 
         if (!task_id || !action || typeof action !== "object") {
@@ -12,7 +13,8 @@ export async function postWorkerTaskInvoicePicture(req, res, next) {
         const uploads = await createWorkerTaskUploads({
             task_id,
             status,
-            action
+            action,
+            organization_id
         });
 
         res.status(200).json({
@@ -25,8 +27,10 @@ export async function postWorkerTaskInvoicePicture(req, res, next) {
     }
 }
 
-export async function fetchWorkerTaskUploads(req, res, next) {
+export async function getWorkerTaskUploadsController(req, res, next) {
     try {
+
+        const organization_id = req.user.organization_id;
         const { task_id } = req.params;
         const { before, after, invoice } = req.query;
 
@@ -40,7 +44,8 @@ export async function fetchWorkerTaskUploads(req, res, next) {
             task_id,
             before,
             after,
-            invoice
+            invoice,
+            organization_id
         });
 
         res.json(result);

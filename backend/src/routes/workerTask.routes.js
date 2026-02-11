@@ -8,5 +8,6 @@ router.post('/', controller.createWorkerTask);
 router.get('/:empId/:date/:status', controller.getWorkerTasksByEmpDateStatus);
 router.get('/history/:empId', controller.getWorkerTaskHistory);
 router.put('/:taskId', controller.updateWorkerTask);
+router.put('/full/:taskId', controller.updateFullWorkerTask);
 
 export default router;

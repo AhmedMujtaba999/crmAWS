@@ -71,30 +71,76 @@ export async function deleteLead(id) {
  * create
  */
 
-export async function createClient(client, data) {
-    const { customer_id, status, source, organization_id } = data;
+export async function createClient(client, {
+    customer_id,
+    status,
+    source,
+    organization_id
+}) {
+    if (!organization_id) {
+        throw new Error('organization_id is required');
+    }
 
     const { rows } = await client.query(
         `
-        INSERT INTO leads (customer_id, status, source, organization_id)
+        INSERT INTO leads (
+            customer_id,
+            status,
+            source,
+            organization_id
+        )
         VALUES ($1, $2, $3, $4)
         RETURNING *
         `,
-        [customer_id, status, source, organization_id]
+        [
+            customer_id,
+            status,
+            source,
+            organization_id
+        ]
     );
 
     return rows[0];
 }
 
-export async function getLeadByIdClient(client, lead_id, organization_id) {
+export async function getLeadByIdClient(client, id) {
     const { rows } = await client.query(
-        `
-        SELECT *
-        FROM leads
-        WHERE id = $1
-          AND organization_id = $2
-        `,
-        [lead_id, organization_id]
+        `SELECT * FROM leads WHERE id = $1`,
+        [id]
     );
     return rows[0];
+}
+
+// src/repositories/lead.repo.js
+
+export async function getLeadByIdOrgIdClient(
+    client,
+    lead_id,
+    organization_id
+) {
+    if (!lead_id) {
+        throw new Error('lead_id is required');
+    }
+    if (!organization_id) {
+        throw new Error('organization_id is required');
+    }
+
+    const { rows } = await client.query(
+        `
+    SELECT
+      id,
+      customer_id,
+      status,
+      source,
+      created_at,
+      updated_at,
+      organization_id
+    FROM leads
+    WHERE id = $1
+      AND organization_id = $2
+    `,
+        [lead_id, organization_id]
+    );
+
+    return rows[0] ?? null;
 }

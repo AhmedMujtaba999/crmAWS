@@ -106,26 +106,46 @@ export async function removeServiceFromLead(lead_id, service_id) {
  * Create lead service record (default type = PLANNED)
  * Used when manager or worker mentions services
  */
-export async function createClient(client, data) {
-    const {
+export async function createClient(
+    client,
+    {
         lead_id,
         service_id,
-        quantity,
-        unit_price,
-        organization_id
-    } = data;
+        quantity = 1,
+        unit_price
+    }
+) {
+    if (!lead_id) throw new Error('lead_id is required');
+    if (!service_id) throw new Error('service_id is required');
+    if (unit_price == null) throw new Error('unit_price is required');
 
-    await client.query(
+    const { rows } = await client.query(
         `
-        INSERT INTO lead_services
-            (lead_id, service_id, quantity, unit_price)
-        VALUES
-            ($1, $2, $3, $4)
-        `,
-        [lead_id, service_id, quantity, unit_price]
+    INSERT INTO lead_services (
+      lead_id,
+      service_id,
+      quantity,
+      unit_price
+    )
+    VALUES ($1, $2, $3, $4)
+    RETURNING
+      lead_id,
+      service_id,
+      quantity,
+      unit_price,
+      total_price,
+      type
+    `,
+        [
+            lead_id,
+            service_id,
+            quantity,
+            unit_price
+        ]
     );
-}
 
+    return rows[0];
+}
 
 /**
  * Promote services from PLANNED → ASSIGNED
@@ -147,4 +167,25 @@ export async function markServicesAssigned(
         `,
         [status, lead_id, serviceIds]
     );
+}
+
+
+// src/repositories/lead-services.repo.js
+
+export async function deleteByLeadIdClient(
+    client,
+    lead_id
+) {
+    if (!lead_id) {
+        throw new Error('lead_id is required');
+    }
+    const { rowCount } = await client.query(
+        `
+    DELETE FROM lead_services
+    WHERE lead_id = $1
+    `,
+        [lead_id]
+    );
+
+    return rowCount; // number of deleted rows
 }

@@ -7,8 +7,7 @@ import * as leadServiceRepo from '../repositories/lead-services.repo.js';
 import * as workerTaskRepo from '../repositories/workerTask.repo.js';
 import * as invoiceRepo from '../repositories/invoice.repo.js';
 import * as taskImagesRepo from '../repositories/taskImages.repo.js';
-import { sendTaskCompletionEmail } from './emailInvoice.service.js';
-
+import * as emailServices from '../services/email.service.js'
 
 const ALLOWED_STATUSES = ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING', 'DRAFT', 'DEFERRED'];
 /**
@@ -17,7 +16,6 @@ const ALLOWED_STATUSES = ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING', 'DRAFT'
  */
 export async function createWorkerTask(payload) {
     const client = await pool.connect();
-
     try {
         await client.query('BEGIN');
 
@@ -25,16 +23,15 @@ export async function createWorkerTask(payload) {
             date,
             task_title,
             description,
-            emp_id,
             services,
             customer_name,
             phone,
             email,
             address,
             status,
+            emp_id,
             organization_id // 🔐 REQUIRED
         } = payload;
-
         // =========================
         // Validation
         // =========================
@@ -74,7 +71,7 @@ export async function createWorkerTask(payload) {
         // =========================
         const lead = await leadRepo.createClient(client, {
             customer_id: customer.id,
-            status: 'POTENTIAL',    //chane$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+            status: 'POTENTIAL',
             source: 'WORKER_UI',
             organization_id
         });
@@ -88,7 +85,6 @@ export async function createWorkerTask(payload) {
                 service_id: s.service_id,
                 quantity: s.quantity ?? 1,
                 unit_price: s.unit_price,
-                organization_id
             });
         }
 
@@ -176,7 +172,7 @@ export async function getWorkerTaskHistory(empId) {
 }
 
 
-export async function updateWorkerTaskStatus({
+export async function updateWorkerTaskCompleted({
     taskId,
     status,
     send_invoice,
@@ -251,7 +247,6 @@ export async function updateWorkerTaskStatus({
                 emailPayload = {
                     to: customer.email,
                     invoice,
-                    images
                 };
             }
         }
@@ -266,8 +261,143 @@ export async function updateWorkerTaskStatus({
     }
 
     if (emailPayload) {
-        await sendTaskCompletionEmail(emailPayload);
+        await emailServices.sendTaskCompletionInvoiceEmail(emailPayload, organization_id);
     }
 
     return { success: true };
+}
+
+
+export async function updateFullWorkerTask(task_id, payload) {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const {
+            date,
+            task_title,
+            description,
+            status,
+            customer_name,
+            phone,
+            email,
+            address,
+            services,
+            organization_id,
+            emp_id // 🔐 auth-only
+        } = payload;
+
+        // =========================
+        // Validation
+        // =========================
+        if (!organization_id) throw new Error('organization_id missing');
+        if (!emp_id) throw new Error('emp_id missing');
+        if (!task_id) throw new Error('task_id missing');
+
+        if (!date) throw new Error('date required');
+        if (!task_title) throw new Error('task_title required');
+        if (!description) throw new Error('description required');
+        if (!phone) throw new Error('phone required');
+
+        if (!Array.isArray(services)) {
+            throw new Error('services must be an array');
+        }
+
+        if (!ALLOWED_STATUSES.includes(status)) {
+            throw new Error(`Invalid status: ${status}`);
+        }
+
+        // =========================
+        // Load task (auth check)
+        // =========================
+        const task = await taskRepo.findByIdAndEmpClient(
+            client,
+            task_id,
+            emp_id,
+            organization_id
+        );
+
+        if (!task) {
+            throw new Error('Task not found or not assigned to this employee');
+        }
+
+        // =========================
+        // Load lead + customer
+        // =========================
+        const lead = await leadRepo.getLeadByIdOrgIdClient(
+            client,
+            task.lead_id,
+            organization_id
+        );
+
+        const customer = await customerRepo.findByIdClient(
+            client,
+            lead.customer_id,
+            organization_id
+        );
+
+        // =========================
+        // Update CUSTOMER (overwrite)
+        // =========================
+        await customerRepo.updateClient(
+            client,
+            customer.id,
+            organization_id,
+            {
+                name: customer_name,
+                phone,
+                email,
+                address
+            }
+        );
+
+        // =========================
+        // Update TASK (emp_id untouched)
+        // =========================
+        await taskRepo.updateClient(
+            client,
+            task_id,
+            organization_id,
+            {
+                title: task_title,
+                description,
+                due_date: date,
+                status
+            }
+        );
+
+        // =========================
+        // Replace SERVICES
+        // =========================
+        await leadServiceRepo.deleteByLeadIdClient(
+            client,
+            lead.id,
+            organization_id
+        );
+
+        for (const s of services) {
+            await leadServiceRepo.createClient(client, {
+                lead_id: lead.id,
+                service_id: s.service_id,
+                quantity: s.quantity ?? 1,
+                unit_price: s.unit_price,
+
+            });
+        }
+
+        await client.query('COMMIT');
+
+        return {
+            success: true,
+            task_id,
+            message: 'Worker task updated successfully'
+        };
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
 }

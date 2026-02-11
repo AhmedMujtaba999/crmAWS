@@ -164,6 +164,26 @@ export async function createClient(client, data) {
     return rows[0];
 }
 
+export async function findByIdAndEmpClient(
+    client,
+    task_id,
+    emp_id,
+    organization_id
+) {
+    const { rows } = await client.query(
+        `
+    SELECT *
+    FROM tasks
+    WHERE id = $1
+      AND employee_id = $2
+      AND organization_id = $3
+    `,
+        [task_id, emp_id, organization_id]
+    );
+
+    return rows[0];
+}
+
 /**
  * READ task by ID (transaction-safe)
  */
@@ -192,3 +212,28 @@ export async function updateTaskStatusAndFlags(client, taskId, data) {
 
     return rows[0];
 }
+
+export async function updateClient(
+    client,
+    task_id,
+    organization_id,
+    { title, description, due_date, status }
+) {
+    const { rows } = await client.query(
+        `
+        UPDATE tasks
+        SET
+            title = $1,
+            description = $2,
+            due_date = $3,
+            status = $4
+        WHERE id = $5
+          AND organization_id = $6
+        RETURNING *
+        `,
+        [title, description, due_date, status, task_id, organization_id]
+    );
+
+    return rows[0];
+}
+
