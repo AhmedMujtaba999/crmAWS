@@ -17,6 +17,8 @@ import uploadConfirmationRoutes from './routes/uploadConfirmation.routes.js';
 
 import uploadRoutes from './routes/upload.routes.js';
 
+import organizationRoutes from './routes/organization.routes.js'
+
 import authRoutes from './routes/auth.routes.js';
 import { requireAuth } from './middlewares/auth.middleware.js';
 
@@ -36,6 +38,7 @@ app.use('/auth', authRoutes);
 /**
  * Protected routes (login required)
  */
+
 app.use('/customers', requireAuth, customerRoutes);
 app.use('/leads', requireAuth, leadRoutes);
 app.use('/tasks', requireAuth, taskRoutes);
@@ -50,8 +53,9 @@ app.use('/invoices', requireAuth, invoiceRoutes);
 app.use('/workertaskui', requireAuth, workerTaskRoutes);
 app.use('/workertaskinoivoicepicture', requireAuth, workerTaskUploadRoutes);
 
-
 app.use('/uploads', requireAuth, uploadRoutes);
 app.use('/upload-confirmation', requireAuth, uploadConfirmationRoutes);
+
+app.use('/strictadmin/organization', requireAuth, organizationRoutes);
 
 export default app;
