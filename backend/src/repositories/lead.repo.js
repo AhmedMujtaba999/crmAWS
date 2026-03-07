@@ -103,7 +103,7 @@ export async function deleteLead(id) {
 //     return rows[0];
 // }
 
-export async function createClient(client, customer_id, source, status, status_detail, notes, organization_id) {
+export async function createClient(client, { customer_id, source, status, status_detail, notes, organization_id }) {
 
     const { rows } = await client.query(
         `

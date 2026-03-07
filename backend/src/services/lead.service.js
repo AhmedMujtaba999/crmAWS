@@ -14,38 +14,40 @@ export async function createLead(data, user) {
     try {
 
         await client.query("BEGIN");
-        console.log('data', data);
         // 1️⃣ create customer
         const customer = await customerRepo.createClient(
             client,
-            data.customer.name,
-            data.customer.phone,
-            data.customer.email,
-            data.customer.address,
-            organization_id
-        );
+            {
+                name: data.customer.name,
+                phone: data.customer.phone,
+                email: data.customer.email,
+                address: data.customer.address,
+                organization_id
+            }
+        )
 
         // 2️⃣ create lead
         const lead = await leadRepo.createClient(
             client,
-            customer.id,
-            data.lead.source,
-            data.lead.status,
-            data.lead.status_detail,
-            data.lead.notes,
-            organization_id
+            {
+                customer_id: customer.id,
+                source: data.lead.source,
+                status: data.lead.status,
+                status_detail: data.lead.status_detail,
+                notes: data.lead.notes,
+                organization_id: organization_id
+            }
         );
 
         // 3️⃣ optional quotation services
-        if (data.services.length > 0) {
+        if (data.services && data.services.length > 0) {
             for (const s of data.services) {
-                await leadServices.createClient(
-                    client,
-                    lead.id,
-                    s.service_id,
-                    s.quantity,
-                    s.unit_price
-                );
+                await leadServices.createClient(client, {
+                    lead_id: lead.id,
+                    service_id: s.service_id,
+                    quantity: s.quantity,
+                    unit_price: s.unit_price
+                });
             }
         }
 

@@ -108,10 +108,10 @@ export async function removeServiceFromLead(lead_id, service_id) {
  */
 export async function createClient(
     client,
-    lead_id,
-    service_id,
-    quantity = 1,
-    unit_price
+    { lead_id,
+        service_id,
+        quantity = 1,
+        unit_price }
 
 ) {
     if (!lead_id) throw new Error('lead_id is required');

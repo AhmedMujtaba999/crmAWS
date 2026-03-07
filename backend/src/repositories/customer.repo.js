@@ -98,11 +98,11 @@ export async function deleteCustomer(id) {
  */
 export async function createClient(
     client,
-    name,
-    phone,
-    email,
-    address,
-    organization_id) {
+    { name,
+        phone,
+        email,
+        address,
+        organization_id }) {
     const { rows } = await client.query(
         `INSERT INTO customers (name, phone, email, address, organization_id)
          VALUES ($1,$2,$3,$4,$5)

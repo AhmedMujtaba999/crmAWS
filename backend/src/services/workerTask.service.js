@@ -55,6 +55,7 @@ export async function createWorkerTask(payload) {
             organization_id
         );
 
+
         if (!customer) {
             customer = await customerRepo.createClient(client, {
                 name: customer_name,
