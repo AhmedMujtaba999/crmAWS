@@ -22,6 +22,10 @@ import organizationRoutes from './routes/organization.routes.js'
 import authRoutes from './routes/auth.routes.js';
 import { requireAuth } from './middlewares/auth.middleware.js';
 
+
+//admin
+import adminLeadsRoutes from './routes/adminLeads.routes.js';
+
 const app = express();
 
 app.use(express.json());
@@ -57,5 +61,10 @@ app.use('/uploads', requireAuth, uploadRoutes);
 app.use('/upload-confirmation', requireAuth, uploadConfirmationRoutes);
 
 app.use('/strictadmin/organization', requireAuth, organizationRoutes);
+
+
+//admin
+
+app.use('/admin', requireAuth, adminLeadsRoutes);
 
 export default app;

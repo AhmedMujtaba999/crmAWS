@@ -48,6 +48,29 @@ export async function getTaskById(id) {
     return result.rows[0];
 }
 
+export async function getTasksByEmpStatusAndDateRange(
+    empId,
+    status,
+    startDate,
+    endDate,
+    organization_id
+) {
+    const { rows } = await pool.query(
+        `
+        SELECT *
+        FROM tasks
+        WHERE employee_id = $1
+          AND status = $2
+          AND organization_id = $3
+          AND due_date BETWEEN $4 AND $5
+        ORDER BY due_date DESC
+        `,
+        [empId, status, organization_id, startDate, endDate]
+    );
+
+    return rows;
+}
+
 export async function updateTask(id, data) {
     const {
         employee_id,

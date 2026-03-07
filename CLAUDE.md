@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Communication Rules (always follow these)
+
+- **Before every file change:** explain out loud — what the file is, why this change is needed, where it sits in the architecture, how the change works, and what the result will be.
+- **Be thorough, never brief.** Every file gets its own full explanation, not a collapsed summary.
+- **Explain syntax and internals:** The user knows JavaScript but not TypeScript, React, or other libraries in this stack. For every piece of code written or changed, explain:
+  - The syntax — what each keyword, symbol, or pattern means (especially TypeScript-specific syntax like generics `<T>`, interfaces, type annotations)
+  - Internal workings — how the library manages things under the hood (e.g. how React re-renders, how TanStack Query caches data, how Zustand notifies subscribers)
+  - The rules — constraints of the technology (e.g. React rules of hooks, TypeScript type enforcement)
+  - Concrete examples where helpful
+- **Never make a silent change.**
+- **Push back when needed:** If the user suggests something that conflicts with industry standards, has a better alternative, or could cause problems down the line — say so clearly before proceeding. Don't silently implement something suboptimal. Suggest the better way, explain why, then let the user decide.
+- **No comments inside SQL queries:** Comments go before or after the SQL backtick string, never inside it. SQL queries must be clean.
+- **Comment the code thoroughly:** Every file written must have comments that explain:
+  - The purpose of each block/function
+  - What the syntax means (especially TypeScript-specific syntax)
+  - How the library handles it internally (e.g. "Zustand calls all subscribers when set() is called")
+  - Why this approach was chosen
+  - Place comments above a block for multi-line explanations, or inline (after the code on the same line) for short clarifications. Use whichever placement makes the explanation clearest.
+
 ## Commands
 
 All commands run from the `backend/` directory:

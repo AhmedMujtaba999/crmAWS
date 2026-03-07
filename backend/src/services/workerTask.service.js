@@ -6,7 +6,6 @@ import * as taskRepo from '../repositories/task.repo.js';
 import * as leadServiceRepo from '../repositories/lead-services.repo.js';
 import * as workerTaskRepo from '../repositories/workerTask.repo.js';
 import * as invoiceRepo from '../repositories/invoice.repo.js';
-import * as taskImagesRepo from '../repositories/taskImages.repo.js';
 import * as emailServices from '../services/email.service.js'
 
 const ALLOWED_STATUSES = ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING', 'DRAFT', 'DEFERRED'];
@@ -69,10 +68,13 @@ export async function createWorkerTask(payload) {
         // =========================
         // LEAD
         // =========================
+        console.log('organization_id', organization_id);
         const lead = await leadRepo.createClient(client, {
             customer_id: customer.id,
-            status: 'POTENTIAL',
             source: 'WORKER_UI',
+            status: 'CLOSED',
+            status_detail: 'test',
+            notes: 'test',
             organization_id
         });
 
@@ -149,7 +151,16 @@ export async function getWorkerTasksByEmpDateStatus({
 
     const normalizedStatus = String(status).trim().toUpperCase();
 
-    // =========================
+    if (normalizedStatus == "Active") {
+        return workerTaskRepo.getAllWorkerTasksStatus(
+            empId,
+            normalizedStatus,
+            organization_id
+        );
+
+    }
+
+    // =========================s
     // 2️⃣ Single optimized query
     // =========================
     return workerTaskRepo.getWorkerTasksByEmpDateStatus(
@@ -158,17 +169,47 @@ export async function getWorkerTasksByEmpDateStatus({
         normalizedStatus,
         organization_id
     );
+
+
 }
 
-export async function getWorkerTaskHistory(empId) {
-    if (!empId) {
-        throw new Error('empId is required');
+export async function getWorkerTaskHistory({
+    empId,
+    organization_id,
+    start,
+    end
+}) {
+    if (!empId) throw new Error("empId is required");
+    if (!organization_id) throw new Error("organization_id is required");
+    if (!start || !end) throw new Error("start and end date are required");
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (isNaN(startDate) || isNaN(endDate)) {
+        throw new Error("Invalid date format");
     }
 
-    // 🔒 Hard-coded business rule
-    const STATUS = 'COMPLETED';
-    console.log("sh", empId);
-    return workerTaskRepo.getTasksByEmpAndStatus(empId, STATUS);
+    if (endDate < startDate) {
+        throw new Error("End date must be after start date");
+    }
+
+    // 🔒 31 day limit protection
+    const diffDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+
+    if (diffDays > 31) {
+        throw new Error("Date range cannot exceed 31 days");
+    }
+
+    const STATUS = "COMPLETED";
+
+    return workerTaskRepo.getWorkerTasksByEmpStatusAndDateRange(
+        empId,
+        STATUS,
+        start,
+        end,
+        organization_id
+    );
 }
 
 
@@ -201,7 +242,6 @@ export async function updateWorkerTaskCompleted({
 
         if (status === 'COMPLETED') {
             let invoice = null;
-            let images = [];
 
             if (task.send_invoice === true) {
                 invoice = await invoiceRepo.getLatestInvoiceByTaskIdClient(
@@ -215,19 +255,8 @@ export async function updateWorkerTaskCompleted({
                 }
             }
 
-            if (task.send_pictures === true) {
-                images = await taskImagesRepo.getTaskImagesByTaskIdClient(
-                    client,
-                    task.id,
-                    organization_id
-                );
 
-                if (!images.length) {
-                    throw new Error('No task images found');
-                }
-            }
-
-            if (task.send_invoice || task.send_pictures) {
+            if (task.send_invoice) {
                 const lead = await leadRepo.getLeadByIdClient(
                     client,
                     task.lead_id,
@@ -401,3 +430,6 @@ export async function updateFullWorkerTask(task_id, payload) {
         client.release();
     }
 }
+
+
+

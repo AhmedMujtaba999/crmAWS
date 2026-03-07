@@ -5,8 +5,8 @@ const router = express.Router();
 
 // POST /workertaskui
 router.post('/', controller.createWorkerTask);
-router.get('/:empId/:date/:status', controller.getWorkerTasksByEmpDateStatus);
-router.get('/history/:empId', controller.getWorkerTaskHistory);
+router.get('/:date/:status', controller.getWorkerTasksByEmpDateStatus);
+router.get('/history', controller.getWorkerTaskHistory);
 router.put('/:taskId', controller.updateWorkerTask);
 router.put('/full/:taskId', controller.updateFullWorkerTask);
 

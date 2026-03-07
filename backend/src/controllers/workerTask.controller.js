@@ -25,7 +25,8 @@ export async function createWorkerTask(req, res) {
  */
 export async function getWorkerTasksByEmpDateStatus(req, res, next) {
     try {
-        const { empId, date, status } = req.params;
+        const empId = req.user.employee_id
+        const { date, status } = req.params;
         const organization_id = req.user.organization_id;
 
         const data = await workerTaskService.getWorkerTasksByEmpDateStatus({
@@ -46,24 +47,28 @@ export async function getWorkerTasksByEmpDateStatus(req, res, next) {
  */
 export async function getWorkerTaskHistory(req, res, next) {
     try {
-        const { empId } = req.params;
+        const empId = req.user.employee_id;
         const organization_id = req.user.organization_id;
 
-        const data = await workerTaskService.getWorkerTaskHistory(
+        const { start, end } = req.query;
+
+        const data = await workerTaskService.getWorkerTaskHistory({
             empId,
-            organization_id
-        );
+            organization_id,
+            start,
+            end
+        });
 
         res.json({
             success: true,
             count: data.length,
             tasks: data
         });
+
     } catch (err) {
         next(err);
     }
 }
-
 /**
  * PATCH /workertaskui/:taskId
  */

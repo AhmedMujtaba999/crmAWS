@@ -4,7 +4,6 @@ import { pool } from "../config/db.js";
 import * as organizationRepo from "../repositories/organization.repo.js";
 import { createPresignedDownload } from "./s3Download.service.js";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { Readable } from "stream";
 
 
 const transporter = nodemailer.createTransport({
@@ -73,16 +72,17 @@ export async function sendTaskCompletionInvoiceEmail(
         if (!org) throw new Error("Organization not found");
 
         const contactEmails = org.contact_emails || {};
-
+        console.log('!!!', contactEmails.main)
         const fromEmail =
             contactEmails.noreply ||
             contactEmails.billing ||
+            contactEmails.main ||
             process.env.SES_FROM_EMAIL;
 
-        const replyToEmail =
-            contactEmails.billing ||
-            contactEmails.support ||
-            fromEmail;
+        // const replyToEmail =
+        //     contactEmails.billing ||
+        //     contactEmails.support ||
+        //     fromEmail;
 
         // ==========================
         // Download PDF from S3
@@ -127,7 +127,7 @@ ${org.name}
         await transporter.sendMail({
             from: `"${org.name}" <${fromEmail}>`,
             to,
-            replyTo: replyToEmail,
+            // replyTo: replyToEmail,
             subject: `Invoice ${invoice.invoice_number} – ${org.name}`,
             text: textBody,
             html: htmlBody,

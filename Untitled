@@ -1,2 +1,0 @@
-ALTER TABLE leads
-ADD CONSTRAINT uq_leads_org_id UNIQUE (organization_id, id);

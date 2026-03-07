@@ -4,7 +4,7 @@ import { pool } from '../config/db.js';
 /**
  * CREATE customer
  */
-export async function createCustomer({ name, phone, email, address }) {
+export async function create({ name, phone, email, address }) {
     const query = `
     INSERT INTO customers (name, phone, email, address)
     VALUES ($1, $2, $3, $4)
@@ -96,12 +96,18 @@ export async function deleteCustomer(id) {
 /**
  * create
  */
-export async function createClient(client, data) {
+export async function createClient(
+    client,
+    name,
+    phone,
+    email,
+    address,
+    organization_id) {
     const { rows } = await client.query(
         `INSERT INTO customers (name, phone, email, address, organization_id)
          VALUES ($1,$2,$3,$4,$5)
          RETURNING *`,
-        [data.name, data.phone, data.email, data.address, data.organization_id]
+        [name, phone, email, address, organization_id]
     );
     return rows[0];
 }

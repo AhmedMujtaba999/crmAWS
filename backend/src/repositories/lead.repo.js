@@ -71,37 +71,60 @@ export async function deleteLead(id) {
  * create
  */
 
-export async function createClient(client, {
-    customer_id,
-    status,
-    source,
-    organization_id
-}) {
-    if (!organization_id) {
-        throw new Error('organization_id is required');
-    }
+// export async function createClient(client, {
+//     customer_id,
+//     status,
+//     source,
+//     organization_id
+// }) {
+//     if (!organization_id) {
+//         throw new Error('organization_id is required');
+//     }
+
+//     const { rows } = await client.query(
+//         `
+//         INSERT INTO leads (
+//             customer_id,
+//             status,
+//             source,
+//             organization_id
+//         )
+//         VALUES ($1, $2, $3, $4)
+//         RETURNING *
+//         `,
+//         [
+//             customer_id,
+//             status,
+//             source,
+//             organization_id
+//         ]
+//     );
+
+//     return rows[0];
+// }
+
+export async function createClient(client, customer_id, source, status, status_detail, notes, organization_id) {
 
     const { rows } = await client.query(
         `
-        INSERT INTO leads (
-            customer_id,
-            status,
-            source,
-            organization_id
-        )
-        VALUES ($1, $2, $3, $4)
-        RETURNING *
-        `,
-        [
-            customer_id,
-            status,
-            source,
-            organization_id
-        ]
+    INSERT INTO leads (
+      customer_id,
+      source,
+      status,
+      status_detail,
+      notes,
+      organization_id
+    )
+    VALUES ($1,$2,$3,$4,$5,$6)
+    RETURNING *
+    `,
+        [customer_id, source, status, status_detail, notes, organization_id]
     );
 
     return rows[0];
 }
+
+
 
 export async function getLeadByIdClient(client, id) {
     const { rows } = await client.query(
