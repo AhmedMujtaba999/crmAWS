@@ -3,7 +3,8 @@ import * as customerService from '../services/customer.service.js';
 
 export async function createCustomer(req, res, next) {
     try {
-        const customer = await customerService.createCustomer(req.body);
+        const organization_id = req.user.organization_id
+        const customer = await customerService.createCustomer(req.body, organization_id);
         res.status(201).json(customer);
     } catch (err) {
         next(err);

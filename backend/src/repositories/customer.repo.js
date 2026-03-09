@@ -4,18 +4,30 @@ import { pool } from '../config/db.js';
 /**
  * CREATE customer
  */
-export async function create({ name, phone, email, address }) {
+export async function create({
+    name,
+    phone,
+    email,
+    address,
+}, organization_id) {
     const query = `
-    INSERT INTO customers (name, phone, email, address)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *;
-  `;
+        INSERT INTO customers (
+            name,
+            phone,
+            email,
+            address,
+            organization_id
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *;
+    `;
 
     const { rows } = await pool.query(query, [
         name,
         phone,
         email,
         address,
+        organization_id
     ]);
 
     return rows[0];

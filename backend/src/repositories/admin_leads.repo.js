@@ -182,7 +182,7 @@ export async function getAdminCustomerLeadHistoryByLeadId(lead_id, organization_
     JOIN leads l
       ON l.organization_id = $2
      AND l.customer_id = b.customer_id
-s
+
     LEFT JOIN tasks t
       ON (t.organization_id, t.lead_id) = (l.organization_id, l.id)
 

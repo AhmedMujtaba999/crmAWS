@@ -45,7 +45,7 @@ export async function createWorkerTask(payload) {
         if (!ALLOWED_STATUSES.includes(status)) {
             throw new Error(`Invalid status: ${status}`);
         }
-
+        console.log('status~~!!!', status)
         // =========================
         // CUSTOMER
         // =========================

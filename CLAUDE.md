@@ -12,6 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - The rules — constraints of the technology (e.g. React rules of hooks, TypeScript type enforcement)
   - Concrete examples where helpful
 - **Never make a silent change.**
+- **Development workflow — module by module:** For each feature/module, complete the full backend first (repo → service → controller → routes → register in app.js), then build the frontend. Never build frontend ahead of its backend.
+- **Figma first for frontend (mandatory for now):** Never build frontend UI without first reviewing the Figma wireframe shared by the user. Study the layout, components, and data displayed before writing a single line of frontend code. Later this may become optional, but until the user says otherwise, Figma review comes before every frontend module.
 - **Push back when needed:** If the user suggests something that conflicts with industry standards, has a better alternative, or could cause problems down the line — say so clearly before proceeding. Don't silently implement something suboptimal. Suggest the better way, explain why, then let the user decide.
 - **No comments inside SQL queries:** Comments go before or after the SQL backtick string, never inside it. SQL queries must be clean.
 - **Comment the code thoroughly:** Every file written must have comments that explain:

@@ -1,12 +1,11 @@
 // src/services/customer.service.js
 import * as customerRepo from '../repositories/customer.repo.js';
 
-export async function createCustomer(data) {
+export async function createCustomer(data, organization_id) {
     if (!data.name) {
         throw new Error('Customer name is required');
     }
-
-    return customerRepo.createCustomer(data);
+    return customerRepo.create(data, organization_id);
 }
 
 export async function listCustomers() {
