@@ -152,35 +152,31 @@ export async function deleteTask(id) {
  * create
  */
 
-
-
 export async function createClient(client, data) {
-    const {
-        lead_id,
-        employee_id,
-        title,
-        description,
-        due_date,
-        status,
-        organization_id
-    } = data;
 
     const { rows } = await client.query(
         `
-        INSERT INTO tasks
-            (lead_id, employee_id, title, description, due_date, status, organization_id)
-        VALUES
-            ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-        `,
-        [
+        INSERT INTO tasks (
             lead_id,
             employee_id,
             title,
             description,
             due_date,
+            estimated_minutes,
             status,
             organization_id
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,'PENDING',$7)
+        RETURNING *
+        `,
+        [
+            data.lead_id,
+            data.employee_id,
+            data.title,
+            data.description,
+            data.due_date,
+            data.estimated_minutes ?? null,
+            data.organization_id
         ]
     );
 
@@ -218,15 +214,42 @@ export async function getTaskByIdClient(client, id) {
     return rows[0];
 }
 
+export async function getTaskByLeadIdClient(
+    client,
+    lead_id,
+    organization_id
+) {
+    const { rows } = await client.query(
+        `
+        SELECT id
+        FROM tasks
+        WHERE lead_id = $1
+        AND organization_id = $2
+        `,
+        [lead_id, organization_id]
+    );
+
+    return rows[0] ?? null;
+}
+
 export async function updateTaskStatusAndFlags(client, taskId, data) {
     const { status, send_invoice, send_pictures } = data;
 
+    // CASE expression sets completed_at to the current timestamp only when the
+    // new status is 'COMPLETED'. For any other status change (e.g. ACTIVE → PENDING),
+    // it keeps the existing completed_at value unchanged.
+    // This way completed_at is always an accurate record of when the task was finished,
+    // and the admin kanban can filter by it instead of the unrelated due_date column.
     const { rows } = await client.query(
         `
         UPDATE tasks
         SET status = $1,
             send_invoice = $2,
-            send_pictures = $3
+            send_pictures = $3,
+            completed_at = CASE
+                WHEN $1 = 'COMPLETED' THEN NOW()
+                ELSE completed_at
+            END
         WHERE id = $4
         RETURNING *
         `,
@@ -234,6 +257,27 @@ export async function updateTaskStatusAndFlags(client, taskId, data) {
     );
 
     return rows[0];
+}
+
+// Admin-side status update — uses pool directly (no transaction needed).
+// Also stamps completed_at when status becomes COMPLETED, matching the same
+// logic used by the worker-side updateTaskStatusAndFlags above.
+export async function updateTaskStatusAdmin(id, status, organization_id) {
+    const { rows } = await pool.query(
+        `
+        UPDATE tasks
+        SET status = $1,
+            completed_at = CASE
+                WHEN $1 = 'COMPLETED' THEN NOW()
+                ELSE completed_at
+            END
+        WHERE id = $2
+          AND organization_id = $3
+        RETURNING *
+        `,
+        [status, id, organization_id]
+    );
+    return rows[0] ?? null;
 }
 
 export async function updateClient(

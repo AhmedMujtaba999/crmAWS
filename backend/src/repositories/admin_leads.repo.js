@@ -16,7 +16,9 @@ export async function getAdminLeadsList(organization_id) {
       l.source,
       l.status,
       l.status_detail,
-      l.created_at
+      l.estimated_minutes,
+      l.created_at,
+      (SELECT COUNT(*)::integer FROM lead_services WHERE lead_id = l.id) AS services_count
 
     FROM leads l
     LEFT JOIN customers c

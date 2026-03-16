@@ -19,6 +19,9 @@ export async function addServiceToLead({
     return result.rows[0];
 }
 
+// lead_services has no organization_id column — tenant scoping is done via
+// the services table (s.organization_id) and the lead_id UUID itself
+// (lead_id is a FK to leads which already belongs to one org).
 export async function getServicesByLeadId(leadId, organization_id) {
     const { rows } = await pool.query(
         `
@@ -30,10 +33,9 @@ export async function getServicesByLeadId(leadId, organization_id) {
             ls.total_price,
             ls.type
         FROM lead_services ls
-        JOIN services s
-          ON (ls.organization_id, ls.service_id) = (s.organization_id, s.id)
+        JOIN services s ON ls.service_id = s.id
         WHERE ls.lead_id = $1
-          AND ls.organization_id = $2
+          AND s.organization_id = $2
         `,
         [leadId, organization_id]
     );
@@ -170,6 +172,21 @@ export async function markServicesAssigned(
 
 
 // src/repositories/lead-services.repo.js
+
+// Count how many services are linked to a lead.
+// COUNT(*)::int — PostgreSQL's COUNT returns bigint by default; the ::int cast
+// converts it so the pg driver gives back a plain JS number, not the string "3".
+// Used by closeLead in the service layer to block closing leads with no services.
+// Filters by lead_id only — the lead_services table has no organization_id column.
+// This is safe: lead_id is a UUID uniquely tied to one org, and closeLeadAdmin
+// independently checks organization_id before updating the lead.
+export async function countByLeadId(lead_id) {
+    const { rows } = await pool.query(
+        `SELECT COUNT(*)::int AS count FROM lead_services WHERE lead_id = $1`,
+        [lead_id]
+    );
+    return rows[0].count;
+}
 
 export async function deleteByLeadIdClient(
     client,

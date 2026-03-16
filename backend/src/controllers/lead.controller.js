@@ -38,6 +38,24 @@ export async function getLeadById(req, res, next) {
     }
 }
 
+// PATCH /leads/:id/estimate — update estimated_minutes on a lead
+// Used from the Assign & Schedule panel before assigning the task.
+export async function updateLeadEstimate(req, res, next) {
+    try {
+        const { id } = req.params;
+        const { estimated_minutes } = req.body;
+        const { organization_id } = req.user;
+
+        const lead = await leadService.updateLeadEstimate(id, estimated_minutes, organization_id);
+
+        if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+        res.json({ success: true, lead });
+    } catch (err) {
+        next(err);
+    }
+}
+
 // export async function updateLead(req, res, next) {
 //     try {
 //         const lead = await leadService.updateLead(req.params.id, req.body);

@@ -63,9 +63,24 @@ export async function deleteService({ id, organization_id }) {
 
 
 /**
- * client
+ * client (transactional versions — accept an already-open pg client)
  */
 
+/**
+ * Create a service inside an existing transaction.
+ * Used by lead.service.js when a user adds a custom (new) service
+ * while creating a lead, so both the service and the lead-service
+ * record are committed or rolled back together.
+ */
+export async function createServiceClient(client, { name, description, organization_id }) {
+    const { rows } = await client.query(
+        `INSERT INTO services (name, description, organization_id)
+         VALUES ($1, $2, $3)
+         RETURNING *`,
+        [name, description ?? null, organization_id]
+    );
+    return rows[0];
+}
 
 /**
  * read

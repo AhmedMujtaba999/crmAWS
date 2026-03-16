@@ -31,6 +31,23 @@ export async function getLeadById(id) {
     return result.rows[0];
 }
 
+// Close a deal: sets the lead's status to 'CLOSED' (uppercase).
+// The admin tasks kanban queries for leads WHERE status = 'CLOSED' to populate
+// the "Unassigned" column, so this exact casing must be used here.
+// Returns the updated lead row, or null if the lead was not found.
+export async function closeLeadAdmin(lead_id, organization_id) {
+    const { rows } = await pool.query(
+        `UPDATE leads
+         SET status = 'CLOSED',
+             updated_at = NOW()
+         WHERE id = $1
+           AND organization_id = $2
+         RETURNING *`,
+        [lead_id, organization_id]
+    );
+    return rows[0] ?? null;
+}
+
 export async function updateLead(id, data) {
     const { status, status_detail, source, notes } = data;
 
@@ -103,7 +120,7 @@ export async function deleteLead(id) {
 //     return rows[0];
 // }
 
-export async function createClient(client, { customer_id, source, status, status_detail, notes, organization_id }) {
+export async function createClient(client, { customer_id, source, status, status_detail, notes, estimated_minutes, organization_id }) {
 
     const { rows } = await client.query(
         `
@@ -113,15 +130,36 @@ export async function createClient(client, { customer_id, source, status, status
       status,
       status_detail,
       notes,
+      estimated_minutes,
       organization_id
     )
-    VALUES ($1,$2,$3,$4,$5,$6)
+    VALUES ($1,$2,$3,$4,$5,$6,$7)
     RETURNING *
     `,
-        [customer_id, source, status, status_detail, notes, organization_id]
+        [customer_id, source, status, status_detail, notes, estimated_minutes ?? null, organization_id]
     );
 
     return rows[0];
+}
+
+// Update only the estimated_minutes field on a lead.
+// Used from the Assign & Schedule panel so the admin can set expected duration
+// before dragging a card onto the timeline.
+export async function updateLeadEstimate(lead_id, estimated_minutes, organization_id) {
+
+    const { rows } = await pool.query(
+        `
+        UPDATE leads
+        SET estimated_minutes = $1,
+            updated_at = NOW()
+        WHERE id = $2
+          AND organization_id = $3
+        RETURNING *
+        `,
+        [estimated_minutes, lead_id, organization_id]
+    );
+
+    return rows[0] ?? null;
 }
 
 
