@@ -1,4 +1,4 @@
-import * as repo from "../repositories/employeeWorkingHours.repo.js";
+import * as repo from "../repositories/emoployeeWorkingHours.repo.js";
 
 export async function createWorkingHours(data, user) {
 

@@ -1,5 +1,5 @@
 import express from "express";
-import * as employeeWorkingHoursController from "../controllers/employeeWorkingHours.controller.js";
+import * as employeeWorkingHoursController from "../controllers/employeeWorkoingHours.controller.js";
 
 const router = express.Router();
 

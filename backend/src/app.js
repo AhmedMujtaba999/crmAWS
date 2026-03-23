@@ -22,8 +22,10 @@ import { requireAuth } from './middlewares/auth.middleware.js';
 
 
 //admin
+// adminLeads.routes.js is mounted at two prefixes below:
+//   /leads  — write operations (POST /leads, PATCH /leads/:id/estimate)
+//   /admin  — admin reads    (GET /admin/leads, GET /admin/leads/:id, etc.)
 import adminLeadsRoutes from './routes/adminLeads.routes.js';
-import leadRoutes from './routes/lead.routes.js';
 import taskRoutes from './routes/adminTasks.router.js';
 import scheduleRoutes from './routes/employeeSchedule.router.js';
 import companyHoliday from './routes/companyholiday.routes.js';
@@ -68,8 +70,8 @@ app.use('/strictadmin/organization', requireAuth, organizationRoutes);
 
 //admin
 
+app.use('/leads', requireAuth, adminLeadsRoutes);
 app.use('/admin', requireAuth, adminLeadsRoutes);
-app.use('/leads', requireAuth, leadRoutes);
 app.use('/tasks', requireAuth, taskRoutes);
 app.use('/schedule', requireAuth, scheduleRoutes);
 app.use('/company-holidays', requireAuth, companyHoliday);
