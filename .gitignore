@@ -1,14 +1,34 @@
-# Backend environment variables
+# ── Backend ───────────────────────────────────────────────────
 backend/.env
-
-# Backend dependencies
 backend/node_modules/
 
-# Logs
-npm-debug.log*
-yarn-error.log*
+# ── Frontend ──────────────────────────────────────────────────
+frontend/app/node_modules/
+frontend/app/dist/
+frontend/app/dist-ssr/
+frontend/app/*.local
 
-# OS junk
+# ── Logs ──────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Editor ────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── OS ────────────────────────────────────────────────────────
 .DS_Store
 
-commands\s reference.pages
+# ── Misc ──────────────────────────────────────────────────────
+commands reference.pages
