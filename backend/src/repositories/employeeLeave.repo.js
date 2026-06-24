@@ -9,9 +9,10 @@ export async function createLeave(data) {
             leave_type,
             start_date,
             end_date,
-            reason
+            reason,
+            organization_id
         )
-        VALUES ($1,$2,$3,$4,$5)
+        VALUES ($1,$2,$3,$4,$5,$6)
         RETURNING *
         `,
         [
@@ -19,7 +20,8 @@ export async function createLeave(data) {
             data.leave_type,
             data.start_date,
             data.end_date,
-            data.reason
+            data.reason,
+            data.organization_id
         ]
     );
 

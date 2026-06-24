@@ -29,7 +29,7 @@ export async function registerEmployee(data) {
         throw new Error('name, phone, email, password, organization_id are required');
     }
 
-    const existing = await repo.findEmployeeByEmailAndOrg(email, organization_id);
+    const existing = await repo.findEmployeeForLogin(email, organization_id);
     if (existing) {
         throw new Error('Employee already exists in this organization');
     }
